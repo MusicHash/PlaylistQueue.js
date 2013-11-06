@@ -35,6 +35,7 @@
      * @name defaults
      */
     defaults = {
+        skin: 'orange',
         target: {
             container: 'body'
         },
@@ -42,6 +43,7 @@
             droppableWidget: 'droppableWidget',
             queueList: 'queueList',
             queueListWrapper: 'queueListWrapper',
+            playerBox: 'playerBox',
             playerBack: 'playerBack'
         },
 
@@ -83,6 +85,8 @@
         methods = {
             /** @private */
             isDropValid: false,
+            
+                        
             /** @private */
             lastActiveItem: null,
 
@@ -91,8 +95,8 @@
              * Init function to draw layout and reset
              */
             bootstrap: function () {
-                this.reset(); // Reset defaults
-                this.layout(); // Apply layout
+                this.reset();   // Reset defaults
+                this.layout();  // Apply layout
             },
 
 
@@ -111,8 +115,10 @@
             layout: function () {
                 this._appender(this.view.droppableSortUI(), api.target.container);
 
-                this.initJqueryDraggable(); // Init the draggable zone, jQueryUI function
-                this.initJquerySortable(); // Init the Sortable/Droppable zone, jQueryUI function
+                this.initJqueryDraggable();                     // Init the draggable zone, jQueryUI function
+                this.initJquerySortable();                      // Init the Sortable/Droppable zone, jQueryUI function
+                this.getDroppableWidget().addClass(api.skin);
+                this.collapseWidgetListener();
             },
 
 
@@ -183,7 +189,7 @@
                 droppableSortUI: function () {
                     var html = [
                         '<div id="' + api.ids.droppableWidget + '" class="droppableQueue medium empty">',
-                        	'<div id="player-box">',
+                            '<div id="'+ api.ids.playerBox +'" class="player-box">',
                     			'<div id="player">',
                     				'<div id="now-streaming">',
                     				'</div>',
@@ -217,7 +223,20 @@
                     return methods.view.draggableTooptipSongUI(el.data('artist'), el.data('album'), el.data('song'));
                 }
             },
+            
 
+            /**
+             *
+             */
+            collapseWidgetListener: function() {
+                var widget = this.getDroppableWidget();
+                
+                widget.find('#'+api.ids.playerBox).on('click', function() {
+                    widget.toggleClass('collapse');
+                });
+                
+            },
+            
 
             /**
              *
