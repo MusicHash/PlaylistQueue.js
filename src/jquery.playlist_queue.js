@@ -136,14 +136,14 @@
                 droppableSongUI: function (artist, album, song, imagePath) {
                     var html = [
                         '<div class="widget-item">',
-                        '<div class="widget-action remove"></div>',
-                        '<div class="widget-action play"></div>',
-                        '<div class="widget-action pause hide"></div>',
-                        '<div class="widget-item-label" title="' + album.title + '">',
-                        '<em><figure><img src="' + imagePath + '" alt=""/></figure></em>',
-                        '<h4>' + song.title + '</h4>',
-                        '<strong>' + artist.title + '</strong>',
-                        '</div>',
+                        	'<div class="widget-action remove"></div>',
+                        	'<div class="widget-action play"></div>',
+                        	'<div class="widget-action pause hide"></div>',
+                        	'<div class="widget-item-label" title="' + album.title + '">',
+                        		'<em><figure><img src="' + imagePath + '" alt=""/></figure></em>',
+                        		'<h4>' + song.title + '</h4>',
+                        		'<strong>' + artist.title + '</strong>',
+                        	'</div>',
                         '</div>'
                     ];
 
@@ -162,11 +162,11 @@
                 draggableTooptipSongUI: function (artist, album, song) {
                     var html = [
                         '<div class="player-widget-drag">',
-                        '<div class="widget-drag-status invalid"></div>',
-                        '<div class="drag-label">',
-                        '<span>' + artist.title + ' - ' + song.title + '</span>',
-                        '<em>(' + album.title + ')</em>',
-                        '</div>',
+                        	'<div class="widget-drag-status invalid"></div>',
+                        	'<div class="drag-label">',
+                        		'<span>' + artist.title + ' - ' + song.title + '</span>',
+                        		'<em>(' + album.title + ')</em>',
+                        	'</div>',
                         '</div>'
                     ];
 
@@ -183,18 +183,18 @@
                 droppableSortUI: function () {
                     var html = [
                         '<div id="' + api.ids.droppableWidget + '" class="droppableQueue medium empty">',
-                        '<div id="player-box">',
-                        '<div id="player">',
-                        '<div id="now-streaming">',
-                        '</div>',
-                        '</div>',
+                        	'<div id="player-box">',
+                    			'<div id="player">',
+                    				'<div id="now-streaming">',
+                    				'</div>',
+                    			'</div>',
 
-                        '<div id="' + api.ids.playerBack + '" class="player-back"></div>',
-                        '</div>',
+                        		'<div id="' + api.ids.playerBack + '" class="player-back"></div>',
+                        	'</div>',
 
-                        '<div id="' + api.ids.queueListWrapper + '" class="queue-list-wrapper">',
-                        '<ol id="' + api.ids.queueList + '" class="queue-list"></ol>',
-                        '</div>',
+                        	'<div id="' + api.ids.queueListWrapper + '" class="queue-list-wrapper">',
+                        		'<ol id="' + api.ids.queueList + '" class="queue-list"></ol>',
+                        	'</div>',
                         '</div>'
                     ];
 
