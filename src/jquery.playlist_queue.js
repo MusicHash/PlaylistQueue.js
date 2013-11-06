@@ -54,11 +54,11 @@
 		onActiveChange: function(item){ }, 		// Fired when Active item set / changed.
 		onPlay: function(item){ }, 				// Fired onPlay
 		onPause: function(item){ }, 			// Fired onPause
-        onSortStart: function(item){ }, 		// Fired on sort on the queue list begins.
+        	onSortStart: function(item){ }, 		// Fired on sort on the queue list begins.
 		onSortChange: function(item){ },		// Fired after queue list order changed.
 		onSortBeforeStop: function(item){ },	// Fired on sort on the queue list ends.
-        onRemove: function(item, idx){ },		// Fired when item is removed from the list or dragged out.
-        onEmpty: function(){ }					// Fired when the sort list is empty
+        	onRemove: function(item, idx){ },		// Fired when item is removed from the list or dragged out.
+        	onEmpty: function(){ }					// Fired when the sort list is empty
 	};
 	
 	//PlaylistQueue: Object
@@ -88,7 +88,7 @@
 		     * Init function to draw layout and reset
 		     */
 			bootstrap: function() {
-                this.reset(); 	// Reset defaults
+                		this.reset(); 	// Reset defaults
 				this.layout(); 	// Apply layout
 			},
             
@@ -106,10 +106,10 @@
 		     * Appends layout to the body
 		     */
 			layout: function() {
-                this._appender(this.view.droppableSortUI(), apt.target.container);
+                		this._appender(this.view.droppableSortUI(), apt.target.container);
                 
-                this.initJqueryDraggable();		// Init the draggable zone, jQueryUI function
-                this.initJquerySortable();		// Init the Sortable/Droppable zone, jQueryUI function
+                		this.initJqueryDraggable();		// Init the draggable zone, jQueryUI function
+                		this.initJquerySortable();		// Init the Sortable/Droppable zone, jQueryUI function
 			},
 			
             
