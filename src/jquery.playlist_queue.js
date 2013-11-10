@@ -43,8 +43,10 @@
             droppableWidget: 'droppableWidget',
             queueList: 'queueList',
             queueListWrapper: 'queueListWrapper',
-            playerBox: 'playerBox',
-            playerBack: 'playerBack'
+            player: 'player',
+			playerBox: 'playerBox',
+            playerBack: 'playerBack',
+            nowStreaming: 'now-streaming',
         },
 
         sortable: {
@@ -118,7 +120,7 @@
                 this.initJqueryDraggable();                     // Init the draggable zone, jQueryUI function
                 this.initJquerySortable();                      // Init the Sortable/Droppable zone, jQueryUI function
                 this.getDroppableWidget().addClass(api.skin);
-                this.collapseWidgetListener();
+                this.subscribeListener();
             },
 
 
@@ -190,8 +192,8 @@
                     var html = [
                         '<div id="' + api.ids.droppableWidget + '" class="droppableQueue medium empty">',
                             '<div id="'+ api.ids.playerBox +'" class="player-box">',
-                    			'<div id="player">',
-                    				'<div id="now-streaming">',
+                    			'<div id="'+ api.ids.player +'">',
+                    				'<div id="'+ api.ids.nowStreaming +'">',
                     				'</div>',
                     			'</div>',
 
@@ -206,8 +208,8 @@
 
                     return $(html.join(' '));
                 },
-
-
+                
+                
                 /**
                  * Custom helper function to re-design the dragged/sorted tooltip while being dropped.
                  * if is not set, the original object will be dragged (default helper: 'clone')
@@ -226,20 +228,31 @@
             
 
             /**
-             *
+             * Subscribe to UI events, add collapse option for the whole bottom nav
+             * and prevents the player from effecting it while being clicked.
+             * 
+             * @return {object} this
              */
-            collapseWidgetListener: function() {
+            subscribeListener: function() {
                 var widget = this.getDroppableWidget();
                 
+                // Collapsable player ability.
                 widget.find('#'+api.ids.playerBox).on('click', function() {
                     widget.toggleClass('collapse');
                 });
                 
+                // Prevents the background from being clickable and collapsable on an undesired locations.
+                widget.find('#'+api.ids.nowStreaming).on('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                });
             },
             
-
+            
             /**
-             *
+             * Initialize draggable zone of songs to be dropped into the sortable queue.
+             * 
+             * @return {object} this
              */
             initJqueryDraggable: function () {
                 return $(el)
@@ -254,14 +267,16 @@
                         tolerance: api.sortable.tolerance,
                         zIndex: api.sortable.zIndex,
 
-                        helper: this.view.dragHelper,
+                        helper: this.view.dragHelper, // Custom UI object of the draggable tooltip
                         connectToSortable: this.getQueueList()
                     });
             },
 
 
             /**
-             *
+             * Initialize the sortable queue of items. draggable must be init before as both lists are connected.
+             * 
+             * @return {object} this
              */
             initJquerySortable: function () {
                 var self = this;
@@ -282,7 +297,7 @@
                         cancel: '.cancel',
 
 
-                        helper: this.view.dragHelper,
+                        helper: this.view.dragHelper, // Custom UI object of the draggable tooltip
 
 
                         start: function (e, ui) {
@@ -354,10 +369,12 @@
                         }
                     });
             },
-
-
+            
+            
             /**
+             * Gets the queue size of playlist.
              *
+             * @return {Number}
              */
             getSize: function () {
                 return this.getQueueList().find('li:not(.cancel)').size();
@@ -365,7 +382,7 @@
 
 
             /**
-             *
+             * 
              */
             queueUpdated: function (item, toRemove) {
                 var queueSize = this.getSize(),
@@ -398,7 +415,9 @@
 
 
             /**
+             * Validate the drop zone and set proper class according to the current position of the tooltip.
              *
+             * @return {object} this
              */
             dragToolTipStatus: function () {
                 var obj = $('.player-widget-drag .widget-drag-status'),
@@ -414,7 +433,7 @@
 
 
             /**
-             *
+             * Action triggered when the 'Play' btn clicked in the queue.
              */
             queuePlayItem: function (item) {
                 this.setActive(($(item)).index());
@@ -423,7 +442,7 @@
 
 
             /**
-             *
+             * Action triggered when the 'Pause' btn clicked in the queue.
              */
             queuePauseItem: function (item) {
                 this._onPause($(item));
@@ -431,17 +450,19 @@
 
 
             /**
+             * Check the state of the song, if playing or not.
              *
+             * @return {bool} 
              */
             isPlaying: function () {
                 var playing = this.getQueueList().find('li.active').find('.play.hide').index();
 
                 return (0 > playing) ? false : true;
             },
-
-
+            
+            
             /**
-             *
+             * Action triggered when the artist field is clicked.
              */
             queueGoToArtist: function (item) {
                 var artist = $(item).data('artist').title;
@@ -452,7 +473,10 @@
 
 
             /**
+             * Get the active song from the queue and the next and previous songs as an option
              *
+			 * @param {Number} prevNext (-1 - previous song, 0 - current song (default value), 1 - next song)
+			 * @return {object} jQuery selector of the active object (or next, previous.. etc.)
              */
             getActive: function (prevNext) {
                 var queueSize = this.getSize() - 1, //index
@@ -472,29 +496,36 @@
             },
 
 
-            //@todo: make better, remove the last active more efficently.
             /**
+             * Sets the active queue item by IndexID.
              *
+             * @param {Number} index - index of the item to be set active.
+             * @return {object} jQuery selector of the new active object after the change
+             * 
+             * @todo: make better, remove the last active more efficently - keep track of the last played item. (might become an issue on longer lists)
              */
             setActive: function (index) {
                 var item = this._getItemByIndex(index);
 
+				// verify if index exists.
                 if (null === item ||
                     (
                         null !== this.getActive() &&
-                        (this.getActive().index() === item.index() && true === this.isPlaying())
+                        (this.getActive().index() === item.index() && true === this.isPlaying()) //prevent from re-setting the current active item again.
                     )
                 ) return null; //now playing similar to currently playing song.
-
+                
+                // Sets active flag on the index
                 this.getQueueList().find('li').removeClass('active');
                 item.addClass('active');
 
+				// Fires the event notifying the item change.
                 this._onActiveChange(item);
-
+                
                 return item;
             },
-
-
+            
+            
             /**
              *
              */
@@ -600,8 +631,8 @@
 
                 return activeItem;
             },
-
-
+            
+            
             /**
              *
              */
@@ -699,7 +730,20 @@
             play: __bind(function () {
                 return this._onPlay();
             }, methods),
+            
+            
+            /**
+             *
+             */
+            playPauseIcon: __bind(function (state) {
+				var activeItem = this.getActive(),
+					isPlay = ('pause' === state) ? 0 : 1;
+                
+				this.setPlayPauseMode(isPlay, false, activeItem);
 
+				return activeItem;
+            }, methods),
+            
 
             /**
              *
