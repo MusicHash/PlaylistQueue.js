@@ -1,15 +1,14 @@
-/*!
+/*! 
 	jQuery PlaylistQueue plugin
 	@name jquery.playlist_queue.js
 	@author Oleg Glozman (oleg.glozman@gmail.com)
-	@version v0.6
+	@version v0.6.1
 	@date 06/11/2013
 	@category jQuery plugin
 	@copyright (c) 2013 Oleg Glozman
 	@license Licensed under the MIT (http://www.opensource.org/licenses/mit-license.php) license.
 */
-;
-(function ($) {
+;(function ($) {
     var PlaylistQueue,
         defaults = {},
         __bind;
@@ -29,7 +28,7 @@
 
 
     /**
-     * laylistQueue default options
+     * PlaylistQueue default options
      *
      * @namespace
      * @name defaults
@@ -67,15 +66,11 @@
     };
 
     //PlaylistQueue: Object
-    PlaylistQueue = function (el, options) {
-        var instance = $(el),
+    PlaylistQueue = function (options) {
+        var publicAPI = {},
             api = $.extend({}, defaults, options),
             touch = ('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch,
             methods = {};
-
-
-        // Store a reference to the PlaylistQueue instance
-        $.data(el, 'instanceRef', instance);
 
 
         /**
@@ -86,6 +81,10 @@
          */
         methods = {
             /** @private */
+			el: null,
+            
+            
+			/** @private */
             isDropValid: false,
             
                         
@@ -97,8 +96,9 @@
              * Init function to draw layout and reset
              */
             bootstrap: function () {
-                this.reset();   // Reset defaults
-                this.layout();  // Apply layout
+                this.reset();   		// Reset defaults
+                this.layout();   		// Draw plugin layout
+                this.jQueryUIInit();	// start jQuery listeners.
             },
 
 
@@ -115,12 +115,33 @@
              * Appends layout to the body
              */
             layout: function () {
+            	if (-1 !== $('#'+api.ids.droppableWidget).index()) return;
+            	
                 this._appender(this.view.droppableSortUI(), api.target.container);
-
-                this.initJqueryDraggable();                     // Init the draggable zone, jQueryUI function
-                this.initJquerySortable();                      // Init the Sortable/Droppable zone, jQueryUI function
                 this.getDroppableWidget().addClass(api.skin);
                 this.subscribeListener();
+            },
+            
+            
+            jQueryUIInit: function() {
+                this.initJqueryDraggable();                     // Init the draggable zone, jQueryUI function
+                this.initJquerySortable();                      // Init the Sortable/Droppable zone, jQueryUI function
+			},
+            
+            
+            /**
+             * Verify all view object exists on the screen, checks if the sortable / draggable are bind ok, if NOT, rebinds.
+             * Made for DOM object removing and adding, backbone.js page swaping etc.
+             * Reinitates the Draggable zone, unbinds old objects.
+             */
+            verifyInstance: function(el) {
+                if (-1 !== this.getDraggableObject().index()) return;
+                
+                this.destructJqueryDraggable(); // clean up, object has been removed from DOM and 
+                
+                // replace the old drag object.
+                this.setEl(el);
+                this.initJqueryDraggable();
             },
 
 
@@ -220,9 +241,9 @@
                  * @return {string} HTML
                  */
                 dragHelper: function (e, ui) {
-                    var el = ui || $(this);
+                    var element = ui || $(this);
 
-                    return methods.view.draggableTooptipSongUI(el.data('artist'), el.data('album'), el.data('song'));
+                    return methods.view.draggableTooptipSongUI(element.data('artist'), element.data('album'), element.data('song'));
                 }
             },
             
@@ -255,7 +276,7 @@
              * @return {object} this
              */
             initJqueryDraggable: function () {
-                return $(el)
+                return this.getDraggableObject()
                     .find('.item-wrapper')
                     .draggable({
                         cursorAt: {
@@ -270,6 +291,18 @@
                         helper: this.view.dragHelper, // Custom UI object of the draggable tooltip
                         connectToSortable: this.getQueueList()
                     });
+            },
+            
+            
+            /**
+             * Destory Draggable Object, called once object detected as removed from DOM.
+             * 
+             * @return {object} this
+             */
+            destructJqueryDraggable: function () {
+                return this.getDraggableObject()
+                    .find('.item-wrapper')
+                    .draggable('destroy');
             },
 
 
@@ -360,7 +393,7 @@
 
                         beforeStop: function (e, ui) {
                             self._onSortBeforeStop(ui.item);
-
+ 
                             $(this).data('newlyDropped', ui.item);
                             if (false === self.isDropValid) {
                                 self.queueUpdated(ui.item, true);
@@ -557,6 +590,14 @@
             getDroppableWidget: function () {
                 return $('#' + api.ids.droppableWidget);
             },
+            
+            
+            /**
+             *
+             */
+            getDraggableObject: function () {
+                return this.el;
+            },
 
 
             /**
@@ -576,6 +617,24 @@
                 return (0 > item.index()) ? null : item;
             },
 
+
+            /**
+             *
+             */
+            setEl: function (el) {
+            	this.el = el;
+            	
+                return this;
+            },
+            
+            
+            /**
+             *
+             */
+            getEl: function () {
+                return this.el;
+            },
+            
 
             /**
              * Random ID generator for appended objects.
@@ -710,12 +769,9 @@
             }
         };
 
-        //PlaylistQueue: Initialize
-        methods.bootstrap();
-
 
         // public API
-        $.extend(instance, {
+        $.extend(publicAPI, {
             /**
              *
              */
@@ -826,11 +882,29 @@
              */
             isPlaying: __bind(function () {
                 return this.isPlaying();
+            }, methods),
+            
+            
+            /**
+             *
+             */
+            setEl: __bind(function (el) {
+				return this.setEl(el);
+            }, methods),
+            
+            
+            /**
+             *
+             */
+            verifyInstance: __bind(function (el) {
+                return this.verifyInstance(el);
             }, methods)
+            
+            
         });
 
 
-        return instance;
+        return publicAPI;
     };
 
 
@@ -840,19 +914,22 @@
      */
     $.fn.playlistQueue = function (options) {
         // Helper strings to quickly perform functions on the draggable queue object.
-        var args = Array.prototype.slice.call(arguments).slice(1), //Convert it to a real Array object.
-            $playlistQueue = $(this).data('instanceRef');
+        var args = Array.prototype.slice.call(arguments).slice(1)
+			obj = null; //Convert it to a real Array object.
 
-        if ('undefined' === typeof ($playlistQueue)) {
-            this.each(function () {
-                if ('undefined' === typeof ($(this).data('instanceRef'))) {
-                    $playlistQueue = new PlaylistQueue(this, options || {});
-                }
-            });
+        if ('undefined' === typeof($.playlistQueueInstance)) {
+			$.playlistQueueInstance = new PlaylistQueue(options || {});
+			$.playlistQueueInstance.setEl(this).bootstrap();
         }
-
-        if ('object' !== typeof (options)) {
-            return $playlistQueue[options].apply(this, args);
+		
+        if ('object' !== typeof(options)) {
+            $.playlistQueueInstance.verifyInstance(this);
+			
+			if ('undefined' !== typeof(options)) {
+            	obj = $.playlistQueueInstance[options].apply(this, args);
+            }
+            
+			return obj;
         }
     };
 
