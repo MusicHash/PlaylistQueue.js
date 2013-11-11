@@ -2,7 +2,7 @@
 	jQuery PlaylistQueue plugin
 	@name jquery.playlist_queue.js
 	@author Oleg Glozman (oleg.glozman@gmail.com)
-	@version v0.6.1
+	@version v0.6.2
 	@date 06/11/2013
 	@category jQuery plugin
 	@copyright (c) 2013 Oleg Glozman
@@ -135,8 +135,8 @@
              * Reinitates the Draggable zone, unbinds old objects.
              */
             verifyInstance: function(el) {
-                if (-1 !== this.getDraggableObject().index()) return;
-                
+				if (this.getDraggableObject().length === el.length) return;
+				
                 this.destructJqueryDraggable(); // clean up, object has been removed from DOM and 
                 
                 // replace the old drag object.
