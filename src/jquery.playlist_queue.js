@@ -2,7 +2,7 @@
 	jQuery PlaylistQueue plugin
 	@name jquery.playlist_queue.js
 	@author Oleg Glozman (oleg.glozman@gmail.com)
-	@version v0.6.2
+	@version v0.6
 	@date 06/11/2013
 	@category jQuery plugin
 	@copyright (c) 2013 Oleg Glozman
@@ -93,13 +93,21 @@
 
 
             /**
-             * Init function to draw layout and reset
+             * Starts the jqueryui gui droppable and sortable. run after been drawn.
              */
             bootstrap: function () {
-                this.reset();   		// Reset defaults
-                this.layout();   		// Draw plugin layout
                 this.jQueryUIInit();	// start jQuery listeners.
             },
+            
+            
+            /**
+             * Init layout and general draw
+             */
+            start: function () {
+                this.reset();   		// Reset defaults
+                this.layout();   		// Draw plugin layout
+            },
+
 
 
             /**
@@ -124,24 +132,43 @@
             
             
             jQueryUIInit: function() {
-                this.initJqueryDraggable();                     // Init the draggable zone, jQueryUI function
-                this.initJquerySortable();                      // Init the Sortable/Droppable zone, jQueryUI function
+                this.initJqueryDraggable();		// Init the draggable zone, jQueryUI function
+                this.initJquerySortable();		// Init the Sortable/Droppable zone, jQueryUI function
 			},
             
             
             /**
              * Verify all view object exists on the screen, checks if the sortable / draggable are bind ok, if NOT, rebinds.
-             * Made for DOM object removing and adding, backbone.js page swaping etc.
-             * Reinitates the Draggable zone, unbinds old objects.
+             *
+             * @return {object} this
              */
             verifyInstance: function(el) {
-				if (this.getDraggableObject().length === el.length) return;
+				if ($(el).is(this.getDraggableObject())) return; //replace with jquery.is()
+				//if (this.getDraggableObject().length === el.length) return; //replace with jquery.is()
 				
-                this.destructJqueryDraggable(); // clean up, object has been removed from DOM and 
+                this.jQueryRebindDragListener(el);
+                
+                return this;
+            },
+            
+            
+            /**
+             * Made for DOM object removing and adding, backbone.js page swaping etc.
+             * Reinitates the Draggable zone, unbinds old objects.
+             *
+             * @return {object} this
+             */
+            jQueryRebindDragListener: function(el) {
+				try{
+					this.destructJqueryDraggable();
+				} catch(e) {
+				} 
                 
                 // replace the old drag object.
                 this.setEl(el);
-                this.initJqueryDraggable();
+                this.jQueryUIInit();
+                
+                return this;
             },
 
 
@@ -260,11 +287,11 @@
                 // Collapsable player ability.
                 widget.find('#'+api.ids.playerBox).on('click', function() {
                     widget.toggleClass('collapse');
+                    $('body').toggleClass('collapsed');
                 });
                 
                 // Prevents the background from being clickable and collapsable on an undesired locations.
                 widget.find('#'+api.ids.nowStreaming).on('click', function(e) {
-                    e.preventDefault();
                     e.stopPropagation();
                 });
             },
@@ -300,7 +327,9 @@
              * @return {object} this
              */
             destructJqueryDraggable: function () {
-                return this.getDraggableObject()
+				if (null === this.getDraggableObject()) return;
+				
+				return this.getDraggableObject()
                     .find('.item-wrapper')
                     .draggable('destroy');
             },
@@ -313,7 +342,7 @@
              */
             initJquerySortable: function () {
                 var self = this;
-
+                
                 return this.getQueueList()
                     .disableSelection()
                     .sortable({
@@ -344,32 +373,9 @@
 
                         receive: function (e, ui) {
                             //drop new item to the sortable
-                            var newlyDropped = $(this).data('newlyDropped'),
-                                uniqueID = self._generateUniqueID(),
-                                context = this; // if context is correct should be equal to this.getQueueList()
+                            var newlyDropped = $(this).data('newlyDropped'); // if context is correct should be equal to this.getQueueList()
 
-                            var html = self.view.droppableSongUI(newlyDropped.data('artist'), newlyDropped.data('album'), newlyDropped.data('song'), newlyDropped.data('thumb'));
-                            newlyDropped.attr({
-                                'id': uniqueID
-                            });
-
-                            $(html).find('.play').on('click', function () {
-                                self.queuePlayItem(newlyDropped);
-                            });
-
-                            $(html).find('.pause').on('click', function () {
-                                self.queuePauseItem(newlyDropped);
-                            });
-
-                            $(html).find('.remove').on('click', function () {
-                                self.queueUpdated(newlyDropped, true);
-                            });
-
-                            $(html).find('strong').on('click', function () {
-                                self.queueGoToArtist(newlyDropped);
-                            });
-
-                            newlyDropped.html(html);
+                            newlyDropped.html(self.getNewItemView(newlyDropped));
                         },
 
 
@@ -401,6 +407,40 @@
                             }
                         }
                     });
+            },
+            
+
+            /**
+             * Gets the HTML structure of the new item UI view in the sortable list.
+             * Also binds all listeners to all buttons.
+             * 
+             * @return {String} - HTML
+             */
+            getNewItemView: function(item) {
+                var html = this.view.droppableSongUI(item.data('artist'), item.data('album'), item.data('song'), item.data('thumb')),
+					self = this;
+				
+                html.attr({
+                    'id': this._generateUniqueID()
+                });
+
+                $(html).find('.play').on('click', function () {
+                    self.queuePlayItem(item);
+                });
+
+                $(html).find('.pause').on('click', function () {
+                    self.queuePauseItem(item);
+                });
+
+                $(html).find('.remove').on('click', function () {
+                    self.queueUpdated(item, true);
+                });
+
+                $(html).find('strong').on('click', function () {
+                    self.queueGoToArtist(item);
+                });
+                
+                return html;
             },
             
             
@@ -480,8 +520,26 @@
             queuePauseItem: function (item) {
                 this._onPause($(item));
             },
-
-
+            
+            
+            /**
+             * Adds list or single object to queue.
+             * @param {mixed} list - should contain a selector or an array of selectors
+             */
+            addQueue: function (list) {
+                var self = this;
+                
+				$.each(list, function(key, item) {
+					item = $(item).clone();
+					var html = self.getNewItemView(item);
+                    
+                    item = item.html(html);
+                    self._appender(item, self.getQueueList());
+                    self.queueUpdated(item);
+                });
+            },
+            
+            
             /**
              * Check the state of the song, if playing or not.
              *
@@ -596,7 +654,7 @@
              *
              */
             getDraggableObject: function () {
-                return this.el;
+                return this.getEl();
             },
 
 
@@ -769,6 +827,7 @@
             }
         };
 
+		methods.start();
 
         // public API
         $.extend(publicAPI, {
@@ -898,9 +957,33 @@
              */
             verifyInstance: __bind(function (el) {
                 return this.verifyInstance(el);
+            }, methods),
+            
+            
+            /**
+             *
+             */
+            addQueue: __bind(function (list) {
+                return this.addQueue(list);
+            }, methods),
+            
+            
+            /**
+             * Plays the last song in the playlist (Used to play newly added song)
+             */
+            playLast: __bind(function () {
+            	this.setActive(this.getSize() - 1);
+            	
+                return this._onPlay();
+            }, methods),
+            
+            
+            /**
+             *
+             */
+            jQueryRebindDragListener: __bind(function (el) {
+                //return this.jQueryRebindDragListener(el);
             }, methods)
-            
-            
         });
 
 
@@ -914,12 +997,13 @@
      */
     $.fn.playlistQueue = function (options) {
         // Helper strings to quickly perform functions on the draggable queue object.
-        var args = Array.prototype.slice.call(arguments).slice(1)
-			obj = null; //Convert it to a real Array object.
+        var args = Array.prototype.slice.call(arguments).slice(1),//Convert it to a real Array object.
+			obj = null; 
 
         if ('undefined' === typeof($.playlistQueueInstance)) {
 			$.playlistQueueInstance = new PlaylistQueue(options || {});
 			$.playlistQueueInstance.setEl(this).bootstrap();
+			
         }
 		
         if ('object' !== typeof(options)) {
